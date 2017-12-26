@@ -222,12 +222,43 @@ impl<'r> Responder<'r> for Vec<u8> {
 
 /// Returns a response with a sized body for the file. Always returns `Ok`.
 impl<'r> Responder<'r> for File {
-    fn respond_to(self, _: &Request) -> response::Result<'r> {
-        let (metadata, file) = (self.metadata(), BufReader::new(self));
-        match metadata {
-            Ok(md) => Response::build().raw_body(Body::Sized(file, md.len())).ok(),
-            Err(_) => Response::build().streamed_body(file).ok()
+    fn respond_to(mut self, req: &Request) -> response::Result<'r> {
+        use http::range::{Range, AcceptRanges, ContentRange};
+        use std::io::{Seek, Read, SeekFrom};
+
+        // Stream the body if we can't determine the file's length.
+        let file_len = match self.metadata() {
+            Ok(metadata) => metadata.len(),
+            Err(_) => return Response::build().streamed_body(BufReader::new(self)).ok()
+        };
+
+        // Handle the `Range` header, if it's present.
+        let mut response = Response::new();
+        if let Some(ranges) = req.headers().parse_one::<Range>() {
+            if !ranges.iter().all(|r| r.within(file_len)) {
+                response.set_status(Status::RangeNotSatisfiable);
+                response.set_header(ContentRange::UnsatisfiableBytes(file_len));
+            } else if ranges.len() == 1 {
+                let (i, n) = ranges[0].bounds(file_len);
+                self.seek(SeekFrom::Start(i)).map_err(|e| {
+                    error_!("Failed to seek for range request: {:?}", e);
+                    Status::InternalServerError
+                })?;
+
+                response.set_status(Status::PartialContent);
+                response.set_header(ContentRange::Bytes(i, i + n - 1, Some(file_len)));
+                response.set_raw_body(Body::Sized(BufReader::new(self.take(n)), n));
+            } else {
+                // TODO: Support multiple ranges, If-Range.
+                response.set_raw_body(Body::Sized(BufReader::new(self), file_len))
+            }
+        } else {
+            // If no `Range` requested, advertise its support, send full file.
+            response.set_header(AcceptRanges::Bytes);
+            response.set_raw_body(Body::Sized(BufReader::new(self), file_len));
         }
+
+        Ok(response)
     }
 }
 

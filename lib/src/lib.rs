@@ -4,6 +4,7 @@
 #![feature(plugin, decl_macro)]
 #![feature(never_type)]
 #![feature(try_trait)]
+#![feature(slice_patterns)]
 
 #![plugin(pear_codegen)]
 

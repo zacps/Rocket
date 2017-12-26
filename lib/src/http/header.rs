@@ -107,6 +107,15 @@ impl<'h> fmt::Display for Header<'h> {
     }
 }
 
+/// Trait implemented by types that can be parsed from a header value.
+pub trait ParseableHeader<'h>: Sized {
+    const HEADER_NAME: &'static str;
+
+    type Error;
+
+    fn parse(value: &'h str) -> Result<Self, Self::Error>;
+}
+
 /// A collection of headers, mapping a header name to its many ordered values.
 ///
 /// # Case-Insensitivity
@@ -258,6 +267,47 @@ impl<'h> HeaderMap<'h> {
                 if values.len() >= 1 { Some(values[0].borrow()) }
                 else { None }
             })
+    }
+
+    /// Parse a header given a type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rocket::http::{HeaderMap, ContentType};
+    ///
+    /// let mut map = HeaderMap::new();
+    /// map.add_raw("Content-Type", "text/html");
+    ///
+    /// let content_type = map.parse_one::<ContentType>();
+    /// assert_eq!(content_type, Some(ContentType::HTML));
+    /// ```
+    ///
+    /// Attempt to retrieve a value that doesn't exist:
+    ///
+    /// ```rust
+    /// use rocket::http::{HeaderMap, ContentType};
+    ///
+    /// let map = HeaderMap::new();
+    /// let content_type = map.parse_one::<ContentType>();
+    /// assert!(content_type.is_none());
+    /// ```
+    ///
+    /// A bad header:
+    ///
+    /// ```rust
+    /// use rocket::http::{HeaderMap, ContentType};
+    ///
+    /// let mut map = HeaderMap::new();
+    /// map.add_raw("Content-Type", "invalid");
+    ///
+    /// let content_type = map.parse_one::<ContentType>();
+    /// assert!(content_type.is_none());
+    /// ```
+    #[inline]
+    pub fn parse_one<'a, H: ParseableHeader<'a>>(&'a self) -> Option<H> {
+        self.get_one(<H as ParseableHeader>::HEADER_NAME)
+            .and_then(|v| <H as ParseableHeader>::parse(v).ok())
     }
 
     /// Replace any header that matches the name of `header.name` with `header`.

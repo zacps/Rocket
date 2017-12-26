@@ -20,6 +20,7 @@ mod accept;
 mod raw_str;
 
 pub(crate) mod parse;
+pub mod range;
 
 // We need to export these for codegen, but otherwise it's unnecessary.
 // TODO: Expose a `const fn` from ContentType when possible. (see RFC#1817)
@@ -31,7 +32,7 @@ pub use self::method::Method;
 pub use self::content_type::ContentType;
 pub use self::accept::{Accept, QMediaType};
 pub use self::status::{Status, StatusClass};
-pub use self::header::{Header, HeaderMap};
+pub use self::header::{Header, ParseableHeader, HeaderMap};
 pub use self::raw_str::RawStr;
 
 pub use self::media_type::MediaType;

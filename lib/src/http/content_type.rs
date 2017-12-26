@@ -4,7 +4,7 @@ use std::str::FromStr;
 use std::fmt;
 
 use ext::IntoCollection;
-use http::{Header, MediaType, Source};
+use http::{Header, ParseableHeader, MediaType, Source};
 use http::hyper::mime::Mime;
 
 /// Representation of HTTP Content-Types.
@@ -41,6 +41,8 @@ use http::hyper::mime::Mime;
 /// ```
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct ContentType(pub MediaType);
+
+const HEADER_NAME: &str = "Content-Type";
 
 macro_rules! content_types {
     ($($name:ident ($check:ident): $str:expr, $t:expr,
@@ -278,9 +280,19 @@ impl Into<Header<'static>> for ContentType {
         // We could also use an `enum` for MediaType. But that kinda sucks. But
         // maybe it's what we want.
         if let Source::Known(src) = self.0.source {
-            Header::new("Content-Type", src)
+            Header::new(HEADER_NAME, src)
         } else {
-            Header::new("Content-Type", self.to_string())
+            Header::new(HEADER_NAME, self.to_string())
         }
+    }
+}
+
+impl<'h> ParseableHeader<'h> for ContentType {
+    const HEADER_NAME: &'static str = HEADER_NAME;
+
+    type Error = String;
+
+    fn parse(value: &'h str) -> Result<Self, Self::Error> {
+        ContentType::from_str(value)
     }
 }
