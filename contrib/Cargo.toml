@@ -35,7 +35,7 @@ rmp-serde = { version = "^0.13", optional = true }
 # Templating dependencies only.
 handlebars = { version = "^0.28", optional = true }
 glob = { version = "^0.2", optional = true }
-tera = { version = "^0.10", optional = true }
+tera = { version = "^0.11", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
