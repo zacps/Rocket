@@ -1,6 +1,15 @@
 macro_rules! known_media_types {
     ($cont:ident) => ($cont! {
         Any (is_any): "any media type", "*", "*",
+        Application (is_application): "any application type", "application", "*",
+        Audio (is_audio): "any audio type", "audio", "*",
+        Font (is_font): "any font type", "font", "*",
+        Image (is_image): "any image type", "image", "*",
+        Message (is_message): "any message type", "message", "*",
+        Model (is_model): "any model type", "model", "*",
+        Multipart (is_multipart): "any multipart type", "multipart", "*",
+        Text (is_text): "any text type", "text", "*",
+        Video (is_video): "any video type", "video", "*",
         Binary (is_binary): "binary data", "application", "octet-stream",
         HTML (is_html): "HTML", "text", "html" ; "charset" => "utf-8",
         Plain (is_plain): "plain text", "text", "plain" ; "charset" => "utf-8",

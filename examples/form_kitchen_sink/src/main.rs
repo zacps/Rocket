@@ -28,7 +28,7 @@ struct FormInput<'r> {
     select: FormOption,
 }
 
-#[post("/", data = "<sink>")]
+#[post("/", data = "<sink>", format="image/*")]
 fn sink(sink: Result<Form<FormInput>, FormError>) -> String {
     match sink {
         Ok(form) => format!("{:?}", &*form),
